@@ -10,27 +10,60 @@ load_dotenv()
 class Config:
     """Configuración de la aplicación"""
     
-    # APIs - Priorizar Streamlit secrets, luego variables de entorno
-    OROCOLOMBIA_URL = st.secrets.get('OROCOLOMBIA_URL', os.getenv('OROCOLOMBIA_URL'))
-    OROCOLOMBIA_CONSUMER_KEY = st.secrets.get('OROCOLOMBIA_CONSUMER_KEY', os.getenv('OROCOLOMBIA_CONSUMER_KEY'))
-    OROCOLOMBIA_CONSUMER_SECRET = st.secrets.get('OROCOLOMBIA_CONSUMER_SECRET', os.getenv('OROCOLOMBIA_CONSUMER_SECRET'))
+    @classmethod
+    def _get_config_value(cls, key, default=None):
+        """Obtener valor de configuración priorizando Streamlit secrets"""
+        try:
+            # Intentar obtener de Streamlit secrets primero
+            return st.secrets.get(key, os.getenv(key, default))
+        except Exception:
+            # Si falla st.secrets, usar variables de entorno
+            return os.getenv(key, default)
     
-    GRUPOFELMEL_URL = st.secrets.get('GRUPOFELMEL_URL', os.getenv('GRUPOFELMEL_URL'))
-    GRUPOFELMEL_CONSUMER_KEY = st.secrets.get('GRUPOFELMEL_CONSUMER_KEY', os.getenv('GRUPOFELMEL_CONSUMER_KEY'))
-    GRUPOFELMEL_CONSUMER_SECRET = st.secrets.get('GRUPOFELMEL_CONSUMER_SECRET', os.getenv('GRUPOFELMEL_CONSUMER_SECRET'))
+    # APIs - Priorizar Streamlit secrets, luego variables de entorno
+    @property
+    def OROCOLOMBIA_URL(self):
+        return self._get_config_value('OROCOLOMBIA_URL')
+    
+    @property
+    def OROCOLOMBIA_CONSUMER_KEY(self):
+        return self._get_config_value('OROCOLOMBIA_CONSUMER_KEY')
+    
+    @property
+    def OROCOLOMBIA_CONSUMER_SECRET(self):
+        return self._get_config_value('OROCOLOMBIA_CONSUMER_SECRET')
+    
+    @property
+    def GRUPOFELMEL_URL(self):
+        return self._get_config_value('GRUPOFELMEL_URL')
+    
+    @property
+    def GRUPOFELMEL_CONSUMER_KEY(self):
+        return self._get_config_value('GRUPOFELMEL_CONSUMER_KEY')
+    
+    @property
+    def GRUPOFELMEL_CONSUMER_SECRET(self):
+        return self._get_config_value('GRUPOFELMEL_CONSUMER_SECRET')
     
     # Configuración general
-    PRODUCTS_PER_PAGE = int(st.secrets.get('PRODUCTS_PER_PAGE', os.getenv('PRODUCTS_PER_PAGE', 100)))
-    CACHE_DURATION_MINUTES = int(st.secrets.get('CACHE_DURATION_MINUTES', os.getenv('CACHE_DURATION_MINUTES', 30)))
-    DISCOUNT_PERCENTAGE = int(st.secrets.get('DISCOUNT_PERCENTAGE', os.getenv('DISCOUNT_PERCENTAGE', 35)))
+    @property
+    def PRODUCTS_PER_PAGE(self):
+        return int(self._get_config_value('PRODUCTS_PER_PAGE', 100))
+    
+    @property
+    def CACHE_DURATION_MINUTES(self):
+        return int(self._get_config_value('CACHE_DURATION_MINUTES', 30))
+    
+    @property
+    def DISCOUNT_PERCENTAGE(self):
+        return int(self._get_config_value('DISCOUNT_PERCENTAGE', 35))
     
     # Rutas
     EXPORTS_DIR = 'exports'
     DATA_DIR = 'data'
     CACHE_DIR = 'data/cache'
     
-    @classmethod
-    def validate(cls):
+    def validate(self):
         """Validar que todas las variables requeridas estén configuradas"""
         required_vars = [
             'OROCOLOMBIA_URL', 'OROCOLOMBIA_CONSUMER_KEY', 'OROCOLOMBIA_CONSUMER_SECRET',
@@ -39,7 +72,7 @@ class Config:
         
         missing = []
         for var in required_vars:
-            if not getattr(cls, var):
+            if not getattr(self, var):
                 missing.append(var)
         
         if missing:

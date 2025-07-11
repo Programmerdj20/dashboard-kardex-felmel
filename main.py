@@ -15,7 +15,7 @@ import io
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from api_connector import ProductManager
-from config import Config
+from streamlit_config import StreamlitConfig
 from export_utils import create_download_button, show_export_summary
 
 # Rutas de logos

@@ -7,7 +7,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import pandas as pd
-from config import Config
+from streamlit_config import StreamlitConfig
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -122,19 +122,20 @@ class ProductManager:
     """Clase para gestionar productos de ambas APIs"""
     
     def __init__(self):
-        Config.validate()
+        self.config = StreamlitConfig()
+        self.config.validate()
         
         self.orocolombia_api = WooCommerceAPI(
-            url=Config.OROCOLOMBIA_URL,
-            consumer_key=Config.OROCOLOMBIA_CONSUMER_KEY,
-            consumer_secret=Config.OROCOLOMBIA_CONSUMER_SECRET,
+            url=self.config.OROCOLOMBIA_URL,
+            consumer_key=self.config.OROCOLOMBIA_CONSUMER_KEY,
+            consumer_secret=self.config.OROCOLOMBIA_CONSUMER_SECRET,
             source_name='OroColmbia'
         )
         
         self.grupofelmel_api = WooCommerceAPI(
-            url=Config.GRUPOFELMEL_URL,
-            consumer_key=Config.GRUPOFELMEL_CONSUMER_KEY,
-            consumer_secret=Config.GRUPOFELMEL_CONSUMER_SECRET,
+            url=self.config.GRUPOFELMEL_URL,
+            consumer_key=self.config.GRUPOFELMEL_CONSUMER_KEY,
+            consumer_secret=self.config.GRUPOFELMEL_CONSUMER_SECRET,
             source_name='GrupoFelmel'
         )
     
@@ -160,7 +161,8 @@ class ProductManager:
                 price = float(product['sale_price'])
             
             # Calcular precio con descuento
-            discount_price = price * (1 - Config.DISCOUNT_PERCENTAGE / 100)
+            config = StreamlitConfig()
+            discount_price = price * (1 - config.DISCOUNT_PERCENTAGE / 100)
             
             # Extraer categorías
             categories = 'Sin categoría'
