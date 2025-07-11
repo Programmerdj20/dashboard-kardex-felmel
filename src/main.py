@@ -170,6 +170,8 @@ st.markdown("""
         background: #E7F1F2 !important;
         border: 1px solid #7B9E7E !important;
         color: #021A23 !important;
+        caret-color: #021A23 !important;
+        cursor: text !important;
     }
     
     .stSelectbox > div > div > select {
@@ -337,21 +339,38 @@ st.markdown("""
         opacity: 0 !important;
     }
     
-    /* Botón de colapsar/expandir sidebar */
-    [data-testid="collapsedControl"] {
+    /* Botón de colapsar/expandir sidebar - más específico */
+    [data-testid="collapsedControl"],
+    [data-testid="collapsedControl"] button,
+    [data-testid="collapsedControl"] > button {
         background-color: #021A23 !important;
         color: #E7F1F2 !important;
         border: 1px solid #7B9E7E !important;
         border-radius: 8px !important;
         padding: 0.5rem !important;
         transition: all 0.3s ease !important;
+        opacity: 1 !important;
+        visibility: visible !important;
     }
     
-    [data-testid="collapsedControl"]:hover {
+    [data-testid="collapsedControl"]:hover,
+    [data-testid="collapsedControl"] button:hover,
+    [data-testid="collapsedControl"] > button:hover {
         background-color: #7B9E7E !important;
         color: #021A23 !important;
         border-color: #E7F1F2 !important;
         transform: translateX(2px) !important;
+    }
+    
+    /* Arreglar cursor invisible en campos de búsqueda */
+    .stTextInput input {
+        caret-color: #021A23 !important;
+        cursor: text !important;
+    }
+    
+    .stTextInput input:focus {
+        caret-color: #021A23 !important;
+        cursor: text !important;
     }
 </style>
 """, unsafe_allow_html=True)
