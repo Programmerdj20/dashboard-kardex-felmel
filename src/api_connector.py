@@ -21,6 +21,7 @@ class WooCommerceAPI:
         self.consumer_secret = consumer_secret
         self.source_name = source_name
         self.session = requests.Session()
+        self.config = StreamlitConfig()
         
         # Configurar autenticación
         self.session.auth = (consumer_key, consumer_secret)
@@ -50,25 +51,33 @@ class WooCommerceAPI:
         }
         
         try:
-            logger.info(f"Consultando {self.source_name} página {page}...")
+            # Log más simple para evitar spam en cloud
+            if page == 1 or page % 5 == 0:  # Solo log cada 5 páginas
+                logger.info(f"Consultando {self.source_name} página {page}...")
+            
             response = self.session.get(self.url, params=params, timeout=30)
             response.raise_for_status()
             
             products = response.json()
-            logger.info(f"{self.source_name} página {page}: {len(products)} productos")
+            
+            if page == 1 or page % 5 == 0:  # Solo log cada 5 páginas
+                logger.info(f"{self.source_name} página {page}: {len(products)} productos")
             
             return products
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Error consultando {self.source_name} página {page}: {str(e)}")
+            logger.error(f"URL: {self.url}")
+            logger.error(f"Response status: {response.status_code if 'response' in locals() else 'No response'}")
             raise
     
-    def get_all_products(self, progress_callback=None) -> List[Dict[str, Any]]:
+    def get_all_products(self, progress_callback=None, max_pages=None) -> List[Dict[str, Any]]:
         """
         Obtener todos los productos paginando automáticamente
         
         Args:
             progress_callback: Función para reportar progreso
+            max_pages: Límite máximo de páginas (para evitar timeouts en cloud)
             
         Returns:
             Lista completa de productos
@@ -78,9 +87,13 @@ class WooCommerceAPI:
         consecutive_errors = 0
         max_consecutive_errors = 3
         
-        while consecutive_errors < max_consecutive_errors:
+        # Límite de páginas para evitar timeouts en Streamlit Cloud
+        if max_pages is None:
+            max_pages = 50  # Límite por defecto para cloud
+        
+        while consecutive_errors < max_consecutive_errors and page <= max_pages:
             try:
-                products = self.get_products(page=page, per_page=Config.PRODUCTS_PER_PAGE)
+                products = self.get_products(page=page, per_page=self.config.PRODUCTS_PER_PAGE)
                 
                 if not products:
                     logger.info(f"{self.source_name}: No hay más productos")
@@ -94,7 +107,7 @@ class WooCommerceAPI:
                     progress_callback(self.source_name, page, len(all_products), len(products))
                 
                 # Si obtuvimos menos productos que el límite, es la última página
-                if len(products) < Config.PRODUCTS_PER_PAGE:
+                if len(products) < self.config.PRODUCTS_PER_PAGE:
                     logger.info(f"{self.source_name}: Última página alcanzada")
                     break
                 
@@ -114,6 +127,9 @@ class WooCommerceAPI:
                 else:
                     # Esperar más tiempo antes del siguiente intento
                     time.sleep(consecutive_errors * 2)
+        
+        if page > max_pages:
+            logger.warning(f"{self.source_name}: Alcanzado límite de {max_pages} páginas. Productos obtenidos: {len(all_products)}")
         
         logger.info(f"{self.source_name}: {len(all_products)} productos obtenidos")
         return all_products
@@ -287,19 +303,34 @@ class ProductManager:
         """
         logger.info("Iniciando consulta de productos...")
         
+        # Detectar si estamos en Streamlit Cloud
+        import streamlit as st
+        is_cloud = hasattr(st, 'secrets') and st.secrets
+        max_pages = 15 if is_cloud else None  # Límite más conservador en cloud
+        
+        logger.info(f"Ejecutando en {'Streamlit Cloud' if is_cloud else 'desarrollo local'}")
+        
         # Obtener productos de OroColmbia
-        orocolombia_products = self.orocolombia_api.get_all_products(progress_callback)
+        logger.info("Obteniendo productos de OroColmbia...")
+        orocolombia_products = self.orocolombia_api.get_all_products(progress_callback, max_pages)
+        logger.info(f"Productos obtenidos de OroColmbia: {len(orocolombia_products)}")
+        
         orocolombia_processed = [
             self.process_product(product, i) 
             for i, product in enumerate(orocolombia_products)
         ]
+        logger.info(f"Productos procesados de OroColmbia: {len(orocolombia_processed)}")
         
         # Obtener productos de GrupoFelmel
-        grupofelmel_products = self.grupofelmel_api.get_all_products(progress_callback)
+        logger.info("Obteniendo productos de GrupoFelmel...")
+        grupofelmel_products = self.grupofelmel_api.get_all_products(progress_callback, max_pages)
+        logger.info(f"Productos obtenidos de GrupoFelmel: {len(grupofelmel_products)}")
+        
         grupofelmel_processed = [
             self.process_product(product, i) 
             for i, product in enumerate(grupofelmel_products)
         ]
+        logger.info(f"Productos procesados de GrupoFelmel: {len(grupofelmel_processed)}")
         
         # Convertir a DataFrames
         try:
