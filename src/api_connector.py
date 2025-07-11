@@ -209,10 +209,20 @@ class ProductManager:
             if product.get('images') and isinstance(product['images'], list) and len(product['images']) > 0:
                 image_url = product['images'][0].get('src', '')
             
+            # Validar que el SKU no sea None o vacío
+            sku = product.get('sku', f'PROD-{index}')
+            if not sku or sku == 'None':
+                sku = f'PROD-{index}'
+            
+            # Validar que el name no sea None
+            name = product.get('name', 'Sin nombre')
+            if not name or name == 'None':
+                name = 'Sin nombre'
+            
             return {
                 'id': product.get('id', f'temp_{index}'),
-                'sku': product.get('sku', f'PROD-{index}'),
-                'name': product.get('name', 'Sin nombre'),
+                'sku': str(sku),  # Asegurar que sea string
+                'name': str(name),  # Asegurar que sea string
                 'slug': product.get('slug', ''),
                 'permalink': product.get('permalink', ''),
                 'categories': categories,
@@ -292,12 +302,24 @@ class ProductManager:
         ]
         
         # Convertir a DataFrames
-        df_orocolombia = pd.DataFrame(orocolombia_processed)
-        df_grupofelmel = pd.DataFrame(grupofelmel_processed)
-        
-        logger.info(f"Productos procesados - OroColmbia: {len(df_orocolombia)}, GrupoFelmel: {len(df_grupofelmel)}")
-        
-        return df_orocolombia, df_grupofelmel
+        try:
+            df_orocolombia = pd.DataFrame(orocolombia_processed)
+            df_grupofelmel = pd.DataFrame(grupofelmel_processed)
+            
+            # Validar que los DataFrames no estén vacíos
+            if df_orocolombia.empty:
+                logger.warning("DataFrame de OroColmbia está vacío")
+            if df_grupofelmel.empty:
+                logger.warning("DataFrame de GrupoFelmel está vacío")
+                
+            logger.info(f"Productos procesados - OroColmbia: {len(df_orocolombia)}, GrupoFelmel: {len(df_grupofelmel)}")
+            
+            return df_orocolombia, df_grupofelmel
+            
+        except Exception as e:
+            logger.error(f"Error creando DataFrames: {str(e)}")
+            # Retornar DataFrames vacíos en caso de error
+            return pd.DataFrame(), pd.DataFrame()
     
     def find_new_products(self, df_orocolombia: pd.DataFrame, df_grupofelmel: pd.DataFrame) -> pd.DataFrame:
         """
@@ -313,23 +335,41 @@ class ProductManager:
         """
         logger.info("Detectando productos nuevos...")
         
-        # Filtrar productos válidos de OroColmbia
-        valid_orocolombia = df_orocolombia[
-            (df_orocolombia['sku'] != '') &
-            (~df_orocolombia['sku'].str.startswith('PROD-')) &
-            (~df_orocolombia['sku'].str.startswith('ERROR-')) &
-            (df_orocolombia['price'] > 0) &
-            (df_orocolombia['stock'] > 0)  # Solo productos con stock
-        ].copy()
-        
-        # SKUs que están en GrupoFelmel
-        grupofelmel_skus = set(df_grupofelmel['sku'].unique())
-        
-        # Productos nuevos: están en OroColmbia pero NO en GrupoFelmel
-        new_products = valid_orocolombia[
-            ~valid_orocolombia['sku'].isin(grupofelmel_skus)
-        ].copy()
-        
-        logger.info(f"Productos nuevos encontrados: {len(new_products)}")
-        
-        return new_products.sort_values('date_modified', ascending=False)
+        try:
+            # Validar que los DataFrames no estén vacíos
+            if df_orocolombia.empty:
+                logger.warning("DataFrame de OroColmbia está vacío")
+                return pd.DataFrame()
+            
+            if df_grupofelmel.empty:
+                logger.warning("DataFrame de GrupoFelmel está vacío - todos los productos serán considerados nuevos")
+                grupofelmel_skus = set()
+            else:
+                # SKUs que están en GrupoFelmel (filtrar valores None)
+                grupofelmel_skus = set(df_grupofelmel['sku'].dropna().unique())
+            
+            # Filtrar productos válidos de OroColmbia
+            valid_orocolombia = df_orocolombia[
+                (df_orocolombia['sku'].notna()) &  # SKU no debe ser None
+                (df_orocolombia['sku'] != '') &
+                (~df_orocolombia['sku'].str.startswith('PROD-')) &
+                (~df_orocolombia['sku'].str.startswith('ERROR-')) &
+                (df_orocolombia['price'] > 0) &
+                (df_orocolombia['stock'] > 0)  # Solo productos con stock
+            ].copy()
+            
+            # Productos nuevos: están en OroColmbia pero NO en GrupoFelmel
+            new_products = valid_orocolombia[
+                ~valid_orocolombia['sku'].isin(grupofelmel_skus)
+            ].copy()
+            
+            logger.info(f"Productos nuevos encontrados: {len(new_products)}")
+            
+            if not new_products.empty:
+                return new_products.sort_values('date_modified', ascending=False)
+            else:
+                return pd.DataFrame()
+                
+        except Exception as e:
+            logger.error(f"Error en find_new_products: {str(e)}")
+            return pd.DataFrame()
