@@ -78,6 +78,33 @@ dashboard-felmel/
 └── requirements.txt   # Dependencias
 ```
 
+## 🚀 Despliegue en Streamlit Cloud
+
+### Configuración rápida:
+
+1. **Fork este repositorio en GitHub**
+2. **Conecta con Streamlit Cloud**:
+   - Ve a [share.streamlit.io](https://share.streamlit.io)
+   - Conecta tu cuenta de GitHub
+   - Selecciona este repositorio
+   - Archivo principal: `main.py`
+
+3. **Configura las variables de entorno** en Streamlit Cloud:
+   ```toml
+   # En la sección "Secrets" de tu app
+   OROCOLOMBIA_URL = "https://orocolombia.co/wp-json/wc/v3/products"
+   OROCOLOMBIA_CONSUMER_KEY = "tu_consumer_key"
+   OROCOLOMBIA_CONSUMER_SECRET = "tu_consumer_secret"
+   GRUPOFELMEL_URL = "https://app.grupofelmel.com/wp-json/wc/v3/products"
+   GRUPOFELMEL_CONSUMER_KEY = "tu_consumer_key"
+   GRUPOFELMEL_CONSUMER_SECRET = "tu_consumer_secret"
+   PRODUCTS_PER_PAGE = 100
+   CACHE_DURATION_MINUTES = 30
+   DISCOUNT_PERCENTAGE = 35
+   ```
+
+4. **¡Despliega!** - Tu app estará disponible en unos minutos
+
 ## Despliegue en Hostinger
 
 El proyecto está optimizado para desplegarse en servidores Hostinger con soporte para Python.
