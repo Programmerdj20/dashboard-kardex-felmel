@@ -336,6 +336,23 @@ st.markdown("""
         box-shadow: none !important;
         opacity: 0 !important;
     }
+    
+    /* Botón de colapsar/expandir sidebar */
+    [data-testid="collapsedControl"] {
+        background-color: #021A23 !important;
+        color: #E7F1F2 !important;
+        border: 1px solid #7B9E7E !important;
+        border-radius: 8px !important;
+        padding: 0.5rem !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    [data-testid="collapsedControl"]:hover {
+        background-color: #7B9E7E !important;
+        color: #021A23 !important;
+        border-color: #E7F1F2 !important;
+        transform: translateX(2px) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
