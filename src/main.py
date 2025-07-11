@@ -356,7 +356,7 @@ st.markdown("""
     [data-testid="collapsedControl"]:hover,
     [data-testid="collapsedControl"] button:hover,
     [data-testid="collapsedControl"] > button:hover {
-        background-color: #7B9E7E !important;
+        background-color: #021A23 !important;
         color: #021A23 !important;
         border-color: #E7F1F2 !important;
         transform: translateX(2px) !important;
